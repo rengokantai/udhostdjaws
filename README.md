@@ -66,14 +66,14 @@ SECURE_BROWSER_XSS_FILTER = True
 ALLOWED_HOSTS = ['y.ke.me']
 DEBUG = False
 ```
-#####
+#####5
 ######4
 add a hosted zone: domain from registrar.  
 copy NS to registrar.
 ######5
 in route53, add A record,name=, value=52.1.2.3  
 add CNAME record, name=www,value=yd.me
-#####
+#####6
 ######2 Integrating s3 with django
 create a bucket, add bucket policy, generate:  
 Actions:GetObject,peincipal=* arn=bucketname/*  
@@ -125,3 +125,52 @@ create two folders in bucket, media,static.
 then,re-edit
 ```
 AWS_S3_DOMAIN="%s.s3.amazonaws.com"%AWS_STRAGE_BUCKET_NAME
+```
+######4 Integrating cloudfront
+replace AWS_S3_DOMAIN with cloudfront link
+
+#####7
+######4 removing security key
+```
+sudo cat > keys.json
+```
+edit
+```
+{"django_key":"1213","aws_secret":""}
+```
+then ctrl+D  
+in settings.py
+```
+import json
+SECRET_KEY=''
+AWS_SECRET_ACCESS_KEY=''
+with open('keys.json') as data:
+    data = json.load(data)
+    SECRET_KEY=data['django_key']
+    AWS_SECRET_ACCESS_KEY=data['aws_secret']
+```
+#####8
+######backup and create AMI
+for vanilla ubuntu
+```
+sudo update-rc.d mysql defaults
+sudo update-rc.d apache2 defaults
+```
+#####9
+create load balancer. set
+```
+ALLOWED_HOSTS = ['*']
+```
+#####10
+######2 creating autoscaling
+create launch configuration., using ami
+######3 Triggering scaling via cloudwatch
+autoscaling group->select->scaling policies  
+open cloudwatch, 
+select metric:elb,search latency->next  
+whenever latency>=3  
+also create a low traffic alarm.  
+select metric:elb,search request->next.
+whenever requestcount<=100 period=5min,statictic=sum  
+
+back to settings,take the action add 1 instances,...
