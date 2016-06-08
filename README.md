@@ -31,6 +31,7 @@ WSGIPythonPath /var/www/ke
 Require all granted
 </Files>
 </Directory>
+```
 ######Setting up aws server
 mysql:
 ```
@@ -60,4 +61,67 @@ change settings.py
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
 ```
+######9 switch to production
+```
+ALLOWED_HOSTS = ['y.ke.me']
+DEBUG = False
+```
+#####
+######4
+add a hosted zone: domain from registrar.  
+copy NS to registrar.
+######5
+in route53, add A record,name=, value=52.1.2.3  
+add CNAME record, name=www,value=yd.me
+#####
+######2 Integrating s3 with django
+create a bucket, add bucket policy, generate:  
+Actions:GetObject,peincipal=* arn=bucketname/*  
+Edit core policy->  
+```
+sudo pip install boto django-storages
+```
+edit settings.py
+```
+INSTALLED_APPS=(
+'storages',
+)
+```
+Add:
+```
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+```
+create a new user only give permission to s3.  
+add a policy: set principal to username we just created.  
+actions=all actions, arn= bucketname/*, bucketname
+######3
+continue seetting. default: media files, like user upload. static: css,js
+```
+AWS_STORAGE_BUCKET_NAME=''
+STATICFILES_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+```
+create a new py file to contain S3BOtoStorage subclass: (location: same lavel of manage.py)
+```
+cat aws_storage_classes.py (ctrl+d)
+```
+content:
+```
+from storages.backends.s3boto import S3BotoStorage
+
+class StaticStorage(S3BotoStorage):
+    location = 'static'
+class MediaStorage(S3BotoStorage):
+    location ='media'
+```
+then,re-edit
+```
+DEFAULT_FILE_STORAGE = 'aws_storage_classes.MediaStorage'
+STATICFILES_STORAGE = 'aws_storage_classes.StaticStorage'
+```
+create two folders in bucket, media,static.  
+then,re-edit
+```
+AWS_S3_DOMAIN="%s.s3.amazonaws.com"%AWS_STRAGE_BUCKET_NAME
